@@ -1,1 +1,96 @@
-T1MA
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Titanic Disaster Visualization</title>
+<style>
+    body { font-family: Arial, sans-serif; }
+    #visualization {
+        width: 100%;
+        max-width: 1000px;
+        margin: auto;
+    }
+    svg { width: 100%; height: auto; }
+    .passenger { transition: fill 0.5s; }
+    .lifeboat { transition: r 0.5s, opacity 0.5s; }
+    .ship-outline { transition: stroke-width 0.5s; }
+    .heatmap { transition: opacity 0.5s; }
+    #slider { width: 80%; margin: 20px auto; }
+    .legend { margin-top: 20px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="visualization">
+    <svg id="titanicSvg" viewBox="0 0 1000 1000">
+        <!-- Ship outline -->
+        <path class="ship-outline" d="M50 50 L950 50 L950 950 L50 950 Z" fill="none" stroke="black"/>
+        <!-- Passenger grid, lifeboats, and heatmap would be dynamically added here -->
+    </svg>
+    <input type="range" min="0" max="300" value="0" class="slider" id="timeSlider">
+    <div class="legend">
+        <p><strong>Legend:</strong></p>
+        <p>Survival Probability: <span style="color:red">Low</span> to <span style="color:green">High</span></p>
+        <p>Lifeboat Capacity: <span style="color:blue">Pulsing Circles</span></p>
+        <p>Hull Integrity: <span style="color:grey">Stroke Width</span></p>
+        <p>Rescue Efficiency: <span style="color:purple">Heatmap Intensity</span></p>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const svg = document.getElementById('titanicSvg');
+    const slider = document.getElementById('timeSlider');
+    const numPassengers = 10000; // Represents 100x100 grid
+    const lifeboats = 20; // Number of lifeboats for visualization
+
+    function updateVisualization(time) {
+        // Clear previous elements
+        svg.innerHTML = '';
+        
+        // Update ship integrity (simplified for example)
+        const hullIntegrity = Math.max(10 - time / 30, 1);
+        svg.querySelector('.ship-outline').setAttribute('stroke-width', hullIntegrity);
+
+        // Add passengers
+        for(let i = 0; i < numPassengers; i++) {
+            const x = (i % 100) * 10;
+            const y = Math.floor(i / 100) * 10;
+            const survivalProb = Math.random(); // Placeholder for actual CSF calculation
+            const passenger = document.createElementNS("http://www.w3.org/2000/svg", 'rect');
+            passenger.setAttribute('x', x);
+            passenger.setAttribute('y', y);
+            passenger.setAttribute('width', 8);
+            passenger.setAttribute('height', 8);
+            passenger.setAttribute('class', 'passenger');
+            passenger.style.fill = `rgb(${255 - survivalProb * 255}, ${survivalProb * 255}, 0)`;
+            passenger.addEventListener('mouseover', function(e) {
+                // Tooltip logic here, showing passenger details
+            });
+            svg.appendChild(passenger);
+        }
+
+        // Add lifeboats (simplified animation)
+        for(let i = 0; i < lifeboats; i++) {
+            const lifeboat = document.createElementNS("http://www.w3.org/2000/svg", 'circle');
+            lifeboat.setAttribute('cx', 500 + Math.cos(i * 2 * Math.PI / lifeboats) * 300);
+            lifeboat.setAttribute('cy', 500 + Math.sin(i * 2 * Math.PI / lifeboats) * 300);
+            lifeboat.setAttribute('r', 10);
+            lifeboat.setAttribute('fill', 'blue');
+            lifeboat.style.opacity = 0.5 + 0.5 * Math.sin(time * 0.1); // Pulsating effect
+            svg.appendChild(lifeboat);
+        }
+
+        // Add heatmap for rescue efficiency (placeholder)
+        // This would typically involve more complex SVG or Canvas rendering based on REM
+    }
+
+    slider.oninput = function() {
+        updateVisualization(this.value);
+    };
+
+    // Initial update
+    updateVisualization(0);
+});
+</script>
+</body>
+</html>

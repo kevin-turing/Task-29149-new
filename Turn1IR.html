@@ -1,1 +1,225 @@
-T1IR
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Disaster Interactive Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-ocean-light: #65c6f4;
+            --color-ocean-default: #0077be;
+            --color-ocean-dark: #004c8c;
+            --color-ship-light: #d1d5db;
+            --color-ship-default: #9ca3af;
+            --color-ship-dark: #4b5563;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to bottom, #001f3f, #000000);
+            color: #e2e8f0;
+        }
+        h1, h2 {
+            font-family: 'Playfair Display', serif;
+        }
+        @keyframes sway {
+            0%, 100% { transform: rotate(-1deg); }
+            50% { transform: rotate(1deg); }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .sway { animation: sway 4s ease-in-out infinite; }
+        .blink { animation: blink 2s infinite; }
+        .lifeboat { transition: all 0.5s ease; }
+        .shadow-text {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+        .bg-frosted {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-6xl font-bold text-center text-white mb-8 shadow-text">Titanic Disaster Simulation</h1>
+        
+        <div class="bg-frosted rounded-xl shadow-2xl p-8 mb-8">
+            <div class="relative">
+                <svg id="titanic-svg" class="w-full h-auto" viewBox="0 0 1000 600">
+                    <defs>
+                        <radialGradient id="rescue-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                            <stop offset="0%" style="stop-color:rgba(255,223,0,0.6);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgba(255,223,0,0);stop-opacity:1" />
+                        </radialGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                        <linearGradient id="water" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#004c8c;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#0077be;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#004c8c;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="0" y="0" width="1000" height="600" fill="url(#water)" />
+                    <circle cx="500" cy="300" r="250" fill="url(#rescue-gradient)" class="rescue-zone" />
+                </svg>
+                <div id="tooltip" class="absolute hidden bg-frosted p-3 rounded-lg shadow-lg text-sm z-10"></div>
+            </div>
+            
+            <div class="mt-6">
+                <label for="time-slider" class="block text-xl font-semibold text-white mb-2">Timeline</label>
+                <input type="range" id="time-slider" min="0" max="300" value="0" class="w-full h-4 bg-blue-500 rounded-full appearance-none cursor-pointer">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-frosted rounded-xl shadow-2xl p-6">
+                <h2 class="text-3xl font-bold text-blue-300 mb-4">Simulation Legend</h2>
+                <ul class="space-y-4">
+                    <li class="flex items-center">
+                        <span class="w-8 h-8 bg-gradient-to-r from-red-500 to-blue-500 rounded-full mr-3"></span>
+                        <span class="text-lg">Passenger Survival Probability</span>
+                    </li>
+                    <li class="flex items-center">
+                        <span class="w-8 h-8 bg-green-400 rounded-full mr-3 blink"></span>
+                        <span class="text-lg">Lifeboats (Size: Capacity)</span>
+                    </li>
+                    <li class="flex items-center">
+                        <span class="w-8 h-8 border-4 border-gray-300 rounded-full mr-3"></span>
+                        <span class="text-lg">Ship's Hull Integrity</span>
+                    </li>
+                    <li class="flex items-center">
+                        <span class="w-8 h-8 bg-yellow-300 opacity-50 mr-3"></span>
+                        <span class="text-lg">Rescue Efficiency Zone</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="bg-frosted rounded-xl shadow-2xl p-6">
+                <h2 class="text-3xl font-bold text-blue-300 mb-4">Simulation Overview</h2>
+                <p class="text-lg leading-relaxed text-gray-100">
+                    This interactive simulation brings the Titanic disaster to life, offering a dynamic visualization of the event's progression. Each dot represents a passenger, with colors indicating survival probability based on various factors. The ship's outline thickness reflects hull integrity, deteriorating over time. Green circles represent lifeboats, their size indicating capacity. The golden glow symbolizes the expanding rescue zone, intensifying as time progresses, illustrating the race against time in this historic maritime tragedy.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const svg = document.getElementById('titanic-svg');
+        const slider = document.getElementById('time-slider');
+        const tooltip = document.getElementById('tooltip');
+
+        // Improved ship outline
+        const shipPath = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+        shipPath.setAttribute('d', 'M300,250 C350,230 450,220 500,220 S650,230 700,250 L700,350 C650,370 550,380 500,380 S350,370 300,350 Z');
+        shipPath.setAttribute('fill', 'rgba(156, 163, 175, 0.7)');
+        shipPath.setAttribute('stroke', '#4b5563');
+        shipPath.setAttribute('class', 'ship-outline sway');
+        shipPath.setAttribute('filter', 'url(#glow)');
+        svg.appendChild(shipPath);
+
+        // More realistic passenger representation
+        const passengerGroup = document.createElementNS("http://www.w3.org/2000/svg", 'g');
+        for (let i = 0; i < 100; i++) {
+            for (let j = 0; j < 50; j++) {
+                const passenger = document.createElementNS("http://www.w3.org/2000/svg", 'circle');
+                passenger.setAttribute('cx', 350 + i * 3);
+                passenger.setAttribute('cy', 260 + j * 3);
+                passenger.setAttribute('r', 1.5);
+                passenger.setAttribute('class', 'passenger');
+                passenger.addEventListener('mouseover', showTooltip);
+                passenger.addEventListener('mouseout', hideTooltip);
+                passengerGroup.appendChild(passenger);
+            }
+        }
+        svg.appendChild(passengerGroup);
+
+        // Improved lifeboats
+        for (let i = 0; i < 20; i++) {
+            const lifeboat = document.createElementNS("http://www.w3.org/2000/svg", 'ellipse');
+            const angle = i * Math.PI / 10;
+            lifeboat.setAttribute('cx', 500 + Math.cos(angle) * 230);
+            lifeboat.setAttribute('cy', 300 + Math.sin(angle) * 140);
+            lifeboat.setAttribute('rx', 12);
+            lifeboat.setAttribute('ry', 8);
+            lifeboat.setAttribute('fill', '#10b981');
+            lifeboat.setAttribute('class', 'lifeboat blink');
+            lifeboat.setAttribute('filter', 'url(#glow)');
+            svg.appendChild(lifeboat);
+        }
+
+        function updateViz(time) {
+            const t = time / 300; // Normalized time
+
+            // Update hull integrity (HIS formula)
+            const SSI = 7.82; // Given in the article
+            const integrity = 100 - (20 * Math.log(t * 300 + 1)) - (5 * SSI * Math.sqrt(t * 300)) - (2 * Math.sin(t * 300 * Math.PI / 30));
+            shipPath.style.strokeWidth = Math.max(2, integrity / 10) + 'px';
+            shipPath.style.fill = `rgba(156, 163, 175, ${Math.max(0.3, integrity / 100)})`;
+
+            // Update passenger survival (CSF formula)
+            passengerGroup.childNodes.forEach((p, index) => {
+                const MSI = Math.random() * 5; // Simplified MSI
+                const CSF = MSI * (1 + 0.05 * Math.random()) * (1 - Math.exp(-Math.random() * 1000)) * (1 + 0.1 * Math.log(Math.random() * 10 + 1)) * (1 + 0.02 * Math.random() * 10);
+                const survival = Math.max(0, Math.min(1, CSF / 10 - t)); // Adjust survival based on time
+                p.style.fill = `rgb(${(1-survival) * 255}, ${survival * 100}, ${survival * 255})`;
+                p.style.opacity = 0.8 + survival * 0.2; // Higher survival chance = more opaque
+            });
+
+            // Update lifeboats (LDM formula)
+            document.querySelectorAll('.lifeboat').forEach((boat, i) => {
+                const LA = 0.5 + 0.5 * Math.random(); // Simplified LA
+                const PD = t * 10; // Passenger Density increases with time
+                const CR = 5 + 5 * Math.random(); // Crew Response
+                const LDM = LA * (1 + Math.sin(t * 300 * Math.PI / 45)) * (1 - 0.1 * Math.log(PD + 1)) * (1 + 0.05 * CR);
+                boat.setAttribute('rx', 8 + LDM * 5);
+                boat.setAttribute('ry', 5 + LDM * 3);
+                boat.style.opacity = 0.7 + LDM * 0.3;
+            });
+
+            // Update rescue efficiency zone
+            const rescueZone = document.querySelector('.rescue-zone');
+            rescueZone.style.opacity = 0.2 + t * 0.6; // Increase visibility over time
+        }
+
+        function showTooltip(e) {
+            const rect = svg.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX) + 'px';
+            tooltip.style.top = (e.clientY) + 'px';
+            const passengerClass = Math.floor(Math.random() * 3) + 1;
+            const age = Math.floor(Math.random() * 70) + 10;
+            const gender = Math.random() > 0.5 ? 'Male' : 'Female';
+            tooltip.innerHTML = `
+                <div class="bg-frosted p-3 rounded-lg shadow-lg text-white">
+                    <p class="font-semibold text-blue-300">Passenger Details:</p>
+                    <p><span class="font-medium">Class:</span> ${passengerClass}</p>
+                    <p><span class="font-medium">Age:</span> ${age}</p>
+                    <p><span class="font-medium">Gender:</span> ${gender}</p>
+                </div>
+            `;
+        }
+
+        function hideTooltip() {
+            tooltip.style.display = 'none';
+        }
+
+        slider.oninput = function() {
+            updateViz(this.value);
+        };
+
+        // Initial update
+        updateViz(0);
+    </script>
+</body>
+</html>

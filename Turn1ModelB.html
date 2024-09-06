@@ -1,1 +1,73 @@
-T1MB
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Titanic Disaster Visualization</title>
+<style>
+    body { font-family: Arial, sans-serif; }
+    #visualization { width: 100%; max-width: 1000px; margin: auto; }
+    .passenger { transition: fill 0.3s; }
+    .ship-outline { transition: stroke-width 0.3s; }
+    .lifeboat { transition: r 0.5s; }
+    .heatmap { opacity: 0.7; }
+    .tooltip { position: absolute; background: #fff; border: 1px solid #ccc; padding: 10px; display: none; }
+</style>
+</head>
+<body>
+<div id="visualization">
+    <svg width="1000" height="1000">
+        <!-- Ship outline -->
+        <path d="M100,100 L900,100 ... Z" id="ship" fill="none" stroke="black" stroke-width="5"/>
+        <!-- Passenger grid -->
+        <!-- This should be dynamically generated with JS -->
+        <!-- Lifeboats -->
+        <!-- Heatmap -->
+    </svg>
+    <div id="sliderContainer">
+        <input type="range" min="0" max="270" value="0" class="slider" id="timeSlider"> <!-- 270 minutes from collision to sinking -->
+    </div>
+    <div class="legend">
+        <!-- Legend for colors, lifeboat capacity, etc. -->
+    </div>
+    <div class="explanation">
+        <!-- Brief explanation or key stats -->
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    const svg = document.querySelector('svg');
+    const timeSlider = document.getElementById('timeSlider');
+    
+    // Function to update visualization based on time
+    function updateVisualization(time) {
+        // Update passenger colors, ship integrity, lifeboats, and heatmap
+        // Example for passenger color:
+        document.querySelectorAll('.passenger').forEach(passenger => {
+            const csf = calculateCSF(passenger.data); // Assume passenger has data attached
+            passenger.style.fill = colorFromCSF(csf); // Function to map CSF to color
+        });
+        
+        // Update ship outline based on HIS
+        const integrity = calculateHIS(time);
+        document.getElementById('ship').style.strokeWidth = `${50 - (integrity * 5)}px`;
+        
+        // Update lifeboats and heatmap...
+    }
+
+    timeSlider.oninput = function() {
+        updateVisualization(this.value);
+    };
+
+    // Initial setup
+    setupPassengersGrid();
+    updateVisualization(0);
+});
+
+// Functions like calculateCSF, calculateHIS, colorFromCSF would be defined here
+</script>
+
+<div class="tooltip" id="tooltip"></div>
+</body>
+</html>
